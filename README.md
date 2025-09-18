@@ -44,6 +44,9 @@ Docker会自动选择适合您系统的架构版本。
 | `DOMAIN` | `localhost` | 访问域名 |
 | `PANSOU_PORT` | `8888` | 后端端口 |
 | `PANSOU_HOST` | `127.0.0.1` | 后端地址 |
+| `ENABLED_PLUGINS` | `labi,zhizhen,shandian,duoduo,muou,wanou` | 启用的搜索插件（逗号分隔） |
+
+> 🔌 **重要变更**: 从当前版本开始，必须通过 `ENABLED_PLUGINS` 显式指定要启用的插件，否则不会启用任何插件。
 
 ### Telegram频道配置
 
@@ -93,12 +96,13 @@ docker run -d \
   -p 80:80 \
   -e DOMAIN=yourdomain.com \
   -e SOCKS5_PROXY=socks5://127.0.0.1:1080 \
-  -e CHANNELS=tgsearchers2,yunpanxunlei,BaiduCloudDisk \
+  -e CHANNELS=tgsearchers3,yunpanxunlei,BaiduCloudDisk \
+  -e ENABLED_PLUGINS=labi,zhizhen,shandian,duoduo,muou,wanou \
   -v pansou-data:/app/data \
   ghcr.io/fish2018/pansou-web
 ```
 
-> 🚀 **开箱即用**: 镜像已内置69个频道和性能配置，仅需配置代理即可访问受限地区的Telegram站点。
+> 🚀 **开箱即用**: 镜像已内置数十个频道和性能配置，仅需配置代理即可访问受限地区的Telegram站点。
 
 ## 数据持久化
 

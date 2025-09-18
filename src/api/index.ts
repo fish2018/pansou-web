@@ -51,7 +51,7 @@ const getMockHealthData = (): HealthStatus => {
     plugins_enabled: true,
     plugin_count: 6,
     plugins: ["pansearch", "hdr4k", "shandian", "muou", "duoduo", "labi"],
-    channels: ["tgsearchers2", "SharePanBaidu", "yunpanxunlei", "tianyifc", "BaiduCloudDisk"]
+    channels: ["tgsearchers3", "SharePanBaidu", "yunpanxunlei", "tianyifc", "BaiduCloudDisk"]
   };
 };
 
@@ -99,7 +99,7 @@ const getMockData = (): SearchResponse => {
       {
         message_id: "12345",
         unique_id: "channel-12345",
-        channel: "tgsearchers2",
+        channel: "tgsearchers3",
         datetime: "2023-06-10T14:23:45Z",
         title: "速度与激情全集1-10",
         content: "速度与激情系列全集，1080P高清...",
@@ -120,7 +120,7 @@ const getMockData = (): SearchResponse => {
           password: "1234",
           note: "速度与激情全集1-10",
           datetime: "2023-06-10T14:23:45Z",
-          source: "tgsearchers2"
+          source: "tgsearchers3"
         },
         {
           url: "https://pan.baidu.com/s/1ghijkl",

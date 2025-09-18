@@ -159,7 +159,7 @@ curl http://localhost/api/health
   "plugins_enabled": true,
   "plugin_count": 6,
   "plugins": ["pansearch", "hdr4k", "shandian", "muou", "duoduo", "labi"],
-  "channels": ["tgsearchers2", "SharePanBaidu", "yunpanxunlei"]
+  "channels": ["tgsearchers3", "SharePanBaidu", "yunpanxunlei"]
 }
 ```
 
