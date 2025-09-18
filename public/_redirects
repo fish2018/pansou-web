@@ -1,0 +1,5 @@
+# API路由重定向到Functions
+/api/* /api/:splat 200
+
+# SPA路由处理
+/* /index.html 200
