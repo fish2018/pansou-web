@@ -4,5 +4,9 @@ compatibility_date = "2025-09-18"
 [assets]
 directory = "./dist"
 
-[observability.logs]
-enabled = false
+[env.production]
+compatibility_date = "2025-09-18"
+
+# 环境变量配置
+[vars]
+VITE_API_BASE_URL = "/api"
