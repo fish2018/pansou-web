@@ -1,5 +1,2 @@
-# 1. Functions 路由——完全透传，不重写
 /api/*  /api/:splat  200
-
-# 2. 其余走 SPA
-/*      /index.html   200
+/*  /index.html  200
