@@ -96,7 +96,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD /app/healthcheck.sh || exit 1
 
 # 暴露端口
-EXPOSE 80 443
+EXPOSE 8080 443
 
 # 设置卷挂载点（只挂载/app/data，所有数据都在这里）
 VOLUME ["/app/data"]

@@ -48,7 +48,7 @@ fi
 cat > /etc/nginx/conf.d/default.conf << EOF
 # HTTP服务器
 server {
-    listen 80;
+    listen 8080;
     server_name ${DOMAIN};
     
     # 设置客户端最大请求体大小
