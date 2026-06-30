@@ -169,7 +169,7 @@ const handleSearch = () => {
               class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 w-10 absolute right-0 top-0 h-full rounded-l-none transition-all duration-300 border-0 hover:border hover:border-l-0 hover:border-primary/40 hover:bg-primary hover:text-primary-foreground hover:scale-[1.03]"
             >
               <component 
-                :is="loading ? Icons.Loading() : Icons.Send()" 
+                :is="loading ? Icons.Loading() : Icons.Search()" 
                 :class="[
                   'w-4 h-4',
                   loading && 'animate-spin'
