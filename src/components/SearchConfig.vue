@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { type HealthStatus } from '@/api';
 import type { DetectionSettings } from '@/types';
 import { loadDetectionSettings, persistDetectionSettings } from '@/utils/linkDetection';
+import { loadDiskTypeOrder, saveDiskTypeOrder } from '@/utils/diskTypes';
 
 // 接收后端健康状态作为 props
 const props = defineProps<{
@@ -31,6 +32,8 @@ const normalizeSavedDiskTypes = (savedTypes: string[]) => {
   return savedTypes.filter((type) => currentTypeIds.has(type));
 };
 
+const defaultDiskTypeOrder = diskTypes.map((item) => item.id);
+
 // 状态数据（使用传入的 props）
 const healthData = ref<HealthStatus | null>(null);
 const loading = ref(true);
@@ -40,6 +43,8 @@ const error = ref<string | null>(null);
 const selectedChannels = ref<string[]>([]);
 const selectedPlugins = ref<string[]>([]);
 const selectedDiskTypes = ref<string[]>([]);
+const diskTypeOrder = ref<string[]>([...defaultDiskTypeOrder]);
+const sortMode = ref(false);
 const customChannels = ref<string[]>([]);
 
 // 新增频道输入
@@ -74,6 +79,13 @@ const stats = computed(() => ({
   plugins: selectedPlugins.value.length,
   diskTypes: selectedDiskTypes.value.length
 }));
+
+// 按用户自定义顺序排列的网盘类型
+const orderedDiskTypes = computed(() => {
+  return diskTypeOrder.value
+    .map((id) => diskTypes.find((item) => item.id === id))
+    .filter((item): item is typeof diskTypes[number] => !!item);
+});
 
 // 初始化健康状态（从 props 获取，不再调用 API）
 const initHealth = () => {
@@ -123,6 +135,8 @@ const loadConfig = () => {
       selectedDiskTypes.value = diskTypes.map(d => d.id);
     }
 
+    diskTypeOrder.value = loadDiskTypeOrder(defaultDiskTypeOrder);
+
     if (savedCustomChannels) {
       customChannels.value = JSON.parse(savedCustomChannels);
     }
@@ -138,6 +152,7 @@ const saveConfig = () => {
     localStorage.setItem('pansou_plugins', JSON.stringify(selectedPlugins.value));
     localStorage.setItem('pansou_disk_types', JSON.stringify(selectedDiskTypes.value));
     localStorage.setItem('pansou_custom_channels', JSON.stringify(customChannels.value));
+    saveDiskTypeOrder(diskTypeOrder.value);
     persistDetectionSettings(detectionSettings.value);
 
     // 显示保存成功提示
@@ -248,6 +263,23 @@ const toggleAllDiskTypes = () => {
   }
 };
 
+// 网盘类型排序
+const toggleSortMode = () => {
+  sortMode.value = !sortMode.value;
+};
+
+const moveDiskType = (id: string, direction: 'up' | 'down') => {
+  const index = diskTypeOrder.value.indexOf(id);
+  if (index === -1) return;
+
+  const targetIndex = direction === 'up' ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= diskTypeOrder.value.length) return;
+
+  const next = [...diskTypeOrder.value];
+  [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+  diskTypeOrder.value = next;
+};
+
 // 重置为默认配置
 const resetToDefault = () => {
   if (confirm('确定要重置为默认配置吗？这将清除所有自定义设置。')) {
@@ -255,6 +287,7 @@ const resetToDefault = () => {
       selectedChannels.value = [...healthData.value.channels];
       selectedPlugins.value = [...healthData.value.plugins];
       selectedDiskTypes.value = diskTypes.map(d => d.id);
+      diskTypeOrder.value = [...defaultDiskTypeOrder];
       customChannels.value = [];
       detectionSettings.value = {
         enabled: false
@@ -550,23 +583,42 @@ onMounted(() => {
               <button @click="toggleAllDiskTypes" class="action-btn">
                 {{ selectedDiskTypes.length === diskTypes.length ? '取消全选' : '全选' }}
               </button>
+              <button @click="toggleSortMode" class="action-btn primary" :class="{ 'active': sortMode }">
+                {{ sortMode ? '完成排序' : '排序' }}
+              </button>
             </div>
           </div>
 
           <div class="pane-content">
             <div class="items-grid">
               <div
-                v-for="diskType in diskTypes"
+                v-for="(diskType, index) in orderedDiskTypes"
                 :key="diskType.id"
                 class="item-card disk-card"
-                :class="{ 'selected': selectedDiskTypes.includes(diskType.id) }"
-                @click="toggleDiskType(diskType.id)"
+                :class="{ 'selected': selectedDiskTypes.includes(diskType.id), 'sort-mode': sortMode }"
+                @click="!sortMode && toggleDiskType(diskType.id)"
               >
                 <div class="item-content">
                   <div class="item-name">{{ diskType.name }}</div>
                 </div>
                 <div class="item-actions">
-                  <div class="checkbox" :class="{ 'checked': selectedDiskTypes.includes(diskType.id) }">
+                  <template v-if="sortMode">
+                    <button
+                      type="button"
+                      class="sort-move-btn"
+                      :disabled="index === 0"
+                      title="上移"
+                      @click.stop="moveDiskType(diskType.id, 'up')"
+                    >▲</button>
+                    <button
+                      type="button"
+                      class="sort-move-btn"
+                      :disabled="index === orderedDiskTypes.length - 1"
+                      title="下移"
+                      @click.stop="moveDiskType(diskType.id, 'down')"
+                    >▼</button>
+                  </template>
+                  <div v-else class="checkbox" :class="{ 'checked': selectedDiskTypes.includes(diskType.id) }">
                     <svg v-if="selectedDiskTypes.includes(diskType.id)" class="check-icon" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                     </svg>
@@ -1013,6 +1065,10 @@ onMounted(() => {
   opacity: 0.9;
 }
 
+.action-btn.primary.active {
+  box-shadow: inset 0 0 0 2px hsl(var(--primary-foreground) / 0.5);
+}
+
 /* Pane内容 */
 .pane-content {
   padding: 1.25rem;
@@ -1127,6 +1183,42 @@ onMounted(() => {
 .item-card.selected {
   background: hsl(var(--primary) / 0.1);
   border-color: hsl(var(--primary));
+}
+
+.item-card.sort-mode {
+  cursor: default;
+}
+
+.item-card.sort-mode:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.sort-move-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.25rem;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.65rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sort-move-btn:hover:not(:disabled) {
+  background: hsl(var(--accent));
+  border-color: hsl(var(--primary));
+}
+
+.sort-move-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .detection-card {

@@ -9,7 +9,7 @@ import type {
   MergedResults,
   MergedResultItem,
 } from '@/types';
-import { getDiskTypeName } from '@/utils/diskTypes';
+import { getDiskTypeName, loadDiskTypeOrder, sortDiskTypesByOrder } from '@/utils/diskTypes';
 import {
   buildHealthCacheKey,
   buildHealthRecord,
@@ -71,8 +71,14 @@ const queuedItems = new Map<string, LinkCheckItem>();
 const inFlightKeys = new Set<string>();
 
 // 计算所有可用的网盘类型
+const diskTypeOrder = ref<string[]>(loadDiskTypeOrder());
+
+const reloadDiskTypeOrder = () => {
+  diskTypeOrder.value = loadDiskTypeOrder();
+};
+
 const diskTypes = computed(() => {
-  return Object.keys(props.mergedResults || {}).sort();
+  return sortDiskTypesByOrder(Object.keys(props.mergedResults || {}), diskTypeOrder.value);
 });
 
 // 判断是否有搜索结果
@@ -648,9 +654,11 @@ watch(detailItem, (newVal) => {
 onMounted(() => {
   hydrateHealthCache();
   reloadDetectionSettings();
+  reloadDiskTypeOrder();
   window.addEventListener('keydown', handleKeydown);
   window.addEventListener('storage', reloadDetectionSettings);
   window.addEventListener('config:saved', reloadDetectionSettings);
+  window.addEventListener('config:saved', reloadDiskTypeOrder);
   nextTick(() => {
     rebuildVisibilityObserver();
   });
@@ -660,6 +668,7 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown);
   window.removeEventListener('storage', reloadDetectionSettings);
   window.removeEventListener('config:saved', reloadDetectionSettings);
+  window.removeEventListener('config:saved', reloadDiskTypeOrder);
   document.body.style.overflow = '';
   clearCopyFeedbackTimers();
   clearListPasswordFeedbackTimer();
