@@ -45,6 +45,9 @@ const linkCopyStatus = ref<'idle' | 'success' | 'error'>('idle');
 const passwordCopyStatus = ref<'idle' | 'success' | 'error'>('idle');
 const linkCopyTimer = ref<number | null>(null);
 const passwordCopyTimer = ref<number | null>(null);
+const listLinkFeedbackKey = ref('');
+const listLinkFeedbackStatus = ref<'idle' | 'success' | 'error'>('idle');
+const listLinkFeedbackTimer = ref<number | null>(null);
 const listPasswordFeedbackKey = ref('');
 const listPasswordFeedbackStatus = ref<'idle' | 'success' | 'error'>('idle');
 const listPasswordFeedbackTimer = ref<number | null>(null);
@@ -501,6 +504,11 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
 };
 
 const clearCopyFeedbackTimers = () => {
+  if (listLinkFeedbackTimer.value) {
+    clearTimeout(listLinkFeedbackTimer.value);
+    listLinkFeedbackTimer.value = null;
+  }
+
   if (linkCopyTimer.value) {
     clearTimeout(linkCopyTimer.value);
     linkCopyTimer.value = null;
@@ -521,6 +529,8 @@ const clearListPasswordFeedbackTimer = () => {
 
 const resetCopyStatus = () => {
   clearCopyFeedbackTimers();
+  listLinkFeedbackKey.value = '';
+  listLinkFeedbackStatus.value = 'idle';
   linkCopyStatus.value = 'idle';
   passwordCopyStatus.value = 'idle';
 };
@@ -535,6 +545,30 @@ const getListPasswordStatus = (item: MergedResultItem, index: number) => {
   }
 
   return listPasswordFeedbackStatus.value;
+};
+
+const getListLinkStatus = (item: MergedResultItem, index: number) => {
+  if (listLinkFeedbackKey.value !== getResultItemKey(item, index)) {
+    return 'idle';
+  }
+
+  return listLinkFeedbackStatus.value;
+};
+
+const copyListLink = async (item: MergedResultItem, index: number) => {
+  const success = await copyToClipboard(item.url);
+
+  if (listLinkFeedbackTimer.value) {
+    clearTimeout(listLinkFeedbackTimer.value);
+  }
+
+  listLinkFeedbackKey.value = getResultItemKey(item, index);
+  listLinkFeedbackStatus.value = success ? 'success' : 'error';
+  listLinkFeedbackTimer.value = window.setTimeout(() => {
+    listLinkFeedbackKey.value = '';
+    listLinkFeedbackStatus.value = 'idle';
+    listLinkFeedbackTimer.value = null;
+  }, 1800);
 };
 
 const copyListPassword = async (item: MergedResultItem, index: number) => {
@@ -766,7 +800,36 @@ onUnmounted(() => {
             
             <!-- 第二行：链接和提取码 -->
             <div class="result-row">
-              <div class="result-link" @click="openLink(item.url)">{{ item.url }}</div>
+              <div class="result-link-group">
+                <button
+                  type="button"
+                  class="result-link"
+                  :title="item.url"
+                  @click="openLink(item.url)"
+                >
+                  {{ item.url }}
+                </button>
+                <button
+                  type="button"
+                  class="result-link-copy"
+                  :class="{
+                    copied: getListLinkStatus(item, index) === 'success',
+                    'copy-failed': getListLinkStatus(item, index) === 'error'
+                  }"
+                  :title="getListLinkStatus(item, index) === 'success' ? '已复制' : '复制链接'"
+                  @click.stop="copyListLink(item, index)"
+                >
+                  <template v-if="getListLinkStatus(item, index) === 'success'">
+                    复制成功
+                  </template>
+                  <template v-else-if="getListLinkStatus(item, index) === 'error'">
+                    复制失败
+                  </template>
+                  <template v-else>
+                    复制
+                  </template>
+                </button>
+              </div>
               <button
                 v-if="item.password"
                 type="button"
@@ -1021,11 +1084,20 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   margin-bottom: 0.5rem;
 }
 
 .result-row:last-child {
   margin-bottom: 0;
+}
+
+.result-link-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .result-title-button {
@@ -1171,17 +1243,65 @@ onUnmounted(() => {
 }
 
 .result-link {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font: inherit;
   font-size: 0.875rem;
   color: #3b82f6;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
-  flex: 1;
+  flex: 1 1 auto;
 }
 
 .result-link:hover {
   text-decoration: underline;
+}
+
+.result-link:focus-visible,
+.result-link-copy:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.result-link-copy {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 0.75rem;
+  color: #6b7280;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.result-link-copy:hover {
+  color: #4b5563;
+}
+
+.result-link-copy.copied {
+  color: #059669;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  border-radius: 9999px;
+  background: #ecfdf5;
+  border: 1px solid #d1fae5;
+  line-height: 1;
+}
+
+.result-link-copy.copy-failed {
+  color: #dc2626;
 }
 
 .result-password {
@@ -1528,6 +1648,22 @@ onUnmounted(() => {
   
   .result-item {
     padding: 0.75rem 0.5rem;
+  }
+
+  .result-row {
+    flex-wrap: wrap;
+  }
+
+  .result-link-group {
+    width: 100%;
+  }
+
+  .result-link {
+    font-size: 0.8125rem;
+  }
+
+  .result-link-copy {
+    font-size: 0.6875rem;
   }
   
   .tab-button {
