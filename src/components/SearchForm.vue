@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import type { SearchParams } from '@/api';
 import type { HealthStatus } from '@/api';
 import type { FilterConfig } from '@/types';
 import { Button, Input, Icons } from '@/components/ui';
 import FilterIcon from '@/components/icons/FilterIcon.vue';
+import { parseSearchQuery, writeSearchQuery } from '@/utils/searchQuery';
 
 const keyword = ref('');
 const loading = ref(false);
@@ -12,9 +13,14 @@ const showAdvanced = ref(false);
 const includeKeywords = ref('');
 const excludeKeywords = ref('');
 
+// 是否已根据 URL 参数自动搜索过（避免重复触发）
+const autoSearched = ref(false);
+
 // 接收后端健康状态作为 props
 const props = defineProps<{
   backendHealth: HealthStatus | null;
+  // 后端健康状态是否已获取完毕（成功或失败），用于决定何时可以自动搜索
+  healthReady?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -122,7 +128,14 @@ const handleSearch = () => {
   if (filterConfig.include || filterConfig.exclude) {
     (params as any).filter = JSON.stringify(filterConfig);
   }
-  
+
+  // 把当前搜索条件同步到地址栏，方便复制分享和刷新保留
+  writeSearchQuery({
+    keyword: keyword.value,
+    include: includeKeywords.value,
+    exclude: excludeKeywords.value
+  });
+
   emit('search', params);
   
   // 2秒后重置loading状态
@@ -131,6 +144,33 @@ const handleSearch = () => {
     // 不再触发searchComplete事件
   }, 2000);
 };
+
+// 从 URL 读取搜索条件并填入表单
+onMounted(() => {
+  const query = parseSearchQuery();
+
+  keyword.value = query.keyword;
+  includeKeywords.value = query.include;
+  excludeKeywords.value = query.exclude;
+
+  // 带了过滤条件时展开高级面板，让生效的过滤项可见
+  if (query.include || query.exclude) {
+    showAdvanced.value = true;
+  }
+});
+
+// 自动搜索要等后端健康状态就绪：子组件 onMounted 早于父组件，
+// 此时 backendHealth 必然为 null，直接搜索会让未配置过的用户拿到与手动搜索不同的结果。
+// healthReady 在应用生命周期内只会 false -> true 一次，且必然晚于本组件首次挂载，
+// 因此这里不需要 immediate；切换页面后重新挂载时也不会重复搜索
+watch(() => props.healthReady, (ready) => {
+  if (!ready || autoSearched.value || !keyword.value.trim()) {
+    return;
+  }
+
+  autoSearched.value = true;
+  handleSearch();
+});
 </script>
 
 <template>

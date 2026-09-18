@@ -18,6 +18,8 @@ import { getDiskTypeName } from '@/utils/diskTypes';
 
 // 后端健康状态缓存（应用启动时获取一次）
 const backendHealth = ref<HealthStatus | null>(null);
+// 健康状态是否已获取完毕（无论成功或失败），SearchForm 依赖它决定何时按 URL 参数自动搜索
+const healthReady = ref(false);
 
 // 搜索状态
 const loading = ref(false);
@@ -150,6 +152,9 @@ const initBackendHealth = async () => {
   } catch (err) {
     console.error('获取后端健康状态失败:', err);
     backendHealth.value = null;
+  } finally {
+    // 失败时也要放行，让自动搜索走与手动搜索相同的兜底路径，不会永久卡住
+    healthReady.value = true;
   }
 };
 
@@ -1288,9 +1293,10 @@ onUnmounted(() => {
       <div v-if="currentPage === 'search'" class="search-page">
         <!-- 搜索表单 -->
         <div class="search-form-block mb-6">
-          <SearchForm 
+          <SearchForm
             :backend-health="backendHealth"
-            @search="handleSearch" 
+            :health-ready="healthReady"
+            @search="handleSearch"
             @search-complete="handleSearchComplete"
           />
         </div>
