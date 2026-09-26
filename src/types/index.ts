@@ -39,6 +39,33 @@ export interface SearchResponse {
 }
 
 // 健康状态类型
+// 存活观测：后端按每轮搜索累积、滑动窗口 20 轮统计的插件/频道健康度
+export type LivenessStatus = 'failing' | 'zero_yield' | 'degraded' | 'ok' | 'insufficient_data';
+
+export interface LivenessItem {
+  name: string;
+  status: LivenessStatus;
+  rounds: number;
+  yielded: number;
+  failed: number;
+  zero_yield: number;
+  last_yield?: string;
+  last_error?: string;
+}
+
+export interface LivenessReport {
+  note: string;
+  plugin_total: number;
+  channel_total: number;
+  plugin_status: Record<string, number>;
+  channel_status: Record<string, number>;
+  failing_plugins?: LivenessItem[];
+  zero_yield_plugins?: LivenessItem[];
+  degraded_plugins?: LivenessItem[];
+  failing_channels?: LivenessItem[];
+  zero_yield_channels?: LivenessItem[];
+}
+
 export interface HealthStatus {
   status: string;
   plugins_enabled: boolean;
@@ -46,6 +73,8 @@ export interface HealthStatus {
   plugins: string[];
   channels: string[];
   auth_enabled?: boolean;
+  // 旧版本后端不返回该字段，界面需按缺失处理
+  liveness?: LivenessReport;
 }
 
 // 登录请求参数

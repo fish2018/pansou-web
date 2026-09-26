@@ -426,8 +426,11 @@
         <!-- 接口说明 -->
         <div class="desc-section">
           <h3 class="section-title">📝 接口说明</h3>
-          <p class="api-description">检查API服务是否正常运行，返回服务状态、可用频道列表和插件信息。</p>
+          <p class="api-description">检查API服务是否正常运行，返回服务状态、可用频道列表、插件信息与存活观测。</p>
         </div>
+
+        <!-- 存活观测：哪些插件/频道失效，一眼看出 -->
+        <LivenessPanel />
 
         <!-- 在线调试 -->
         <div class="debug-section">
@@ -765,6 +768,7 @@ import SearchIcon from '@/components/icons/SearchIcon.vue';
 import LockIcon from '@/components/icons/LockIcon.vue';
 import HeartbeatIcon from '@/components/icons/HeartbeatIcon.vue';
 import BookIcon from '@/components/icons/BookIcon.vue';
+import LivenessPanel from '@/components/LivenessPanel.vue';
 import FilterIcon from '@/components/icons/FilterIcon.vue';
 
 // 当前激活的选项卡
