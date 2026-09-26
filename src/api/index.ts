@@ -105,9 +105,12 @@ export const search = async (params: SearchParams): Promise<SearchResponse> => {
     return response.data.data;
   }
   
-  // 如果响应本身就是SearchResponse格式
-  if (response.data && response.data.total !== undefined && response.data.merged_by_type) {
-    return response.data as unknown as SearchResponse;
+  // 如果响应本身就是SearchResponse格式（未经 ApiResponse 包裹）
+  // 注意：response.data 的声明类型是 ApiResponse<SearchResponse>，它没有 total/merged_by_type，
+  // 直接读会被类型系统挡下——也正说明原写法这个兜底分支永远不会命中。这里按"未包裹"的形状检查。
+  const raw = response.data as unknown as SearchResponse;
+  if (raw && raw.total !== undefined && raw.merged_by_type) {
+    return raw;
   }
   
   // 返回空结果
