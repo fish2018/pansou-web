@@ -1313,7 +1313,7 @@ onUnmounted(() => {
         
         <!-- 加载状态：网盘平台环绕轨道动画 -->
         <div v-if="loading" class="search-loading-block card p-6">
-          <LoadingOrbit :keyword="lastSearchParams?.kw" />
+          <LoadingOrbit />
         </div>
         
         <!-- 搜索结果 -->

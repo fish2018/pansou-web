@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import LoadingOrbit from '@/components/LoadingOrbit.vue';
 import { inspectVisibleLinks } from '@/api';
 import type {
   DetectionSettings,
@@ -684,13 +685,9 @@ onUnmounted(() => {
       <p class="empty-title">输入关键词开始搜索</p>
     </div>
     
-    <!-- 搜索中状态 -->
+    <!-- 搜索中状态：与首页加载共用同一个轨道动画，避免两套等待样式 -->
     <div v-else-if="showSearchingState" class="searching-state">
-      <div class="searching-icon">
-        <div class="searching-spinner"></div>
-      </div>
-      <p class="searching-title">正在搜索资源中...</p>
-      <p class="searching-subtitle">资源搜索可能需要一些时间，请耐心等待</p>
+      <LoadingOrbit />
     </div>
     
     <!-- 搜索无结果状态 -->

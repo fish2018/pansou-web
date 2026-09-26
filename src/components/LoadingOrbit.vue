@@ -8,10 +8,12 @@
 // 关键点：单个 animation 同时完成「绕中心公转」与「自身反向自转」，两者在同一 transform 里抵消，
 // 图标才能严格保持正立；半径用 --r 变量，移动端只改半径即可。
 //
+// 配色必须用 hsl(var(--primary)) —— 本项目 pansou.css 里的 --primary 是 HSL 三元组
+// （217 91% 60%），写成 rgb(var(--primary)) 会被 Chrome 按 CSS Color 4 解析成
+// rgb(217, 91%, 60%) = rgb(217,232,153)，即一个黄绿色，而不是主色蓝。
+//
 // 图标放在 public/pan-icons 而不是 src/assets：写在模板里的运行时路径不会被 Vite 处理，
 // 放 src 下开发环境能跑、生产构建必然 404，必须走 public。
-defineProps<{ keyword?: string }>();
-
 const innerIcons = [
   { file: 'baidu.svg', alt: '百度网盘' },
   { file: 'xunlei.svg', alt: '迅雷' },
@@ -89,20 +91,15 @@ const particles = [
       ></div>
     </div>
 
-    <p class="orbit-caption">
-      正在搜索<span v-if="keyword">「{{ keyword }}」</span>
-    </p>
-    <p class="orbit-subcaption">正在聚合网盘插件与 TG 频道结果，请稍候</p>
   </div>
 </template>
 
 <style scoped>
 .loading-orbit {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem 0 0.5rem;
+  padding: 1rem 0;
 }
 
 .orbit-wrap {
@@ -120,7 +117,7 @@ const particles = [
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: radial-gradient(rgba(59, 130, 246, 0.16) 0%, rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(hsl(var(--primary, 217 91% 60%) / 0.16) 0%, rgba(255, 255, 255, 0) 70%);
   animation: orbit-glow 4s ease-in-out infinite;
 }
 
@@ -145,7 +142,7 @@ const particles = [
   height: 96px;
   margin: -48px 0 0 -48px;
   border-radius: 50%;
-  border: 2px solid rgba(59, 130, 246, 0.35);
+  border: 2px solid hsl(var(--primary, 217 91% 60%) / 0.35);
   transform: scale(0.6);
   opacity: 0;
   animation: orbit-pulse 4.2s ease-out infinite;
@@ -171,13 +168,13 @@ const particles = [
   height: 64px;
   margin: -32px 0 0 -32px;
   border-radius: 50%;
-  background: rgb(var(--primary, 59 130 246));
-  color: rgb(var(--primary-foreground, 255 255 255));
+  background: hsl(var(--primary, 217 91% 60%));
+  color: hsl(var(--primary-foreground, 0 0% 98%));
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 5;
-  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.35);
+  box-shadow: 0 6px 18px hsl(var(--primary, 217 91% 60%) / 0.35);
 }
 
 .orbit-center-logo {
@@ -229,7 +226,7 @@ const particles = [
   height: 100%;
   border-radius: 50%;
   background: #fff;
-  border: 1px solid rgba(59, 130, 246, 0.12);
+  border: 1px solid hsl(var(--primary, 217 91% 60%) / 0.12);
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
   overflow: hidden;
   transform-origin: center;
@@ -418,19 +415,6 @@ const particles = [
     transform: translate(var(--dx, 30px), var(--dy, -40px));
     opacity: 0.75;
   }
-}
-
-.orbit-caption {
-  margin: 0.75rem 0 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: rgb(var(--foreground, 15 23 42));
-}
-
-.orbit-subcaption {
-  margin: 0.35rem 0 0;
-  font-size: 0.82rem;
-  color: rgb(var(--muted-foreground, 100 116 139));
 }
 
 /* 尊重系统的减少动效设置 */
