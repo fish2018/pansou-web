@@ -917,7 +917,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 0;
-}
+
+  min-width: 0;}
 
 .search-results-list {
   display: flex;
@@ -926,7 +927,8 @@ onMounted(() => {
   max-height: 520px;
   overflow-y: auto;
   padding-right: 4px;
-}
+
+  min-width: 0;}
 
 .search-results-list::-webkit-scrollbar {
   width: 8px;
@@ -952,7 +954,9 @@ onMounted(() => {
   border: 1px solid hsl(var(--border));
   background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted) / 0.28) 100%);
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-}
+
+  min-width: 0;
+  overflow-wrap: anywhere;}
 
 .result-item:hover {
   border-color: hsl(var(--primary) / 0.25);
@@ -976,7 +980,8 @@ onMounted(() => {
   font-size: 15px;
   font-weight: 600;
   line-height: 1.5;
-}
+
+  overflow-wrap: anywhere;}
 
 .result-index {
   display: inline-flex;
@@ -1036,7 +1041,8 @@ onMounted(() => {
   background: hsl(var(--background));
   border: 1px solid hsl(var(--border) / 0.8);
   border-radius: 10px;
-}
+
+  min-width: 0;}
 
 .link-main {
   display: flex;
@@ -1051,7 +1057,9 @@ onMounted(() => {
   word-break: break-all;
   text-decoration: none;
   line-height: 1.5;
-}
+
+  min-width: 0;
+  overflow-wrap: anywhere;}
 
 .link-url:hover {
   text-decoration: underline;

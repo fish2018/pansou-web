@@ -1123,14 +1123,16 @@ https://pd.qq.com/g/m250319e25"
   display: flex;
   flex-direction: column;
   min-height: 0;
-}
+
+  min-width: 0;}
 
 .search-results-list {
   overflow-y: auto;
   max-height: 400px;
   padding-right: 8px;
   scrollbar-width: thin;
-}
+
+  min-width: 0;}
 
 .search-results-list::-webkit-scrollbar {
   width: 6px;
@@ -1158,7 +1160,9 @@ https://pd.qq.com/g/m250319e25"
   border: 1px solid hsl(var(--border));
   transition: all 0.2s ease;
   margin-bottom: 12px;
-}
+
+  min-width: 0;
+  overflow-wrap: anywhere;}
 
 .result-item:hover {
   background: hsl(var(--muted) / 0.5);
@@ -1174,7 +1178,8 @@ https://pd.qq.com/g/m250319e25"
   background: hsl(var(--background));
   border-radius: 4px;
   margin-top: 4px;
-}
+
+  min-width: 0;}
 
 .link-type {
   display: inline-flex;
@@ -1194,7 +1199,9 @@ https://pd.qq.com/g/m250319e25"
   flex: 1;
   color: hsl(var(--muted-foreground));
   word-break: break-all;
-}
+
+  min-width: 0;
+  overflow-wrap: anywhere;}
 
 .link-password {
   color: hsl(var(--primary));
