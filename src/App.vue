@@ -5,6 +5,7 @@ import type { SearchResponse, MergedResults, ExportField, ExportSettings } from 
 import SearchForm from '@/components/SearchForm.vue';
 import ResultTabs from '@/components/ResultTabs.vue';
 import SearchStats from '@/components/SearchStats.vue';
+import LoadingOrbit from '@/components/LoadingOrbit.vue';
 import SearchConfig from '@/components/SearchConfig.vue';
 import ApiDocs from '@/components/ApiDocs.vue';
 import LoginDialog from '@/components/LoginDialog.vue';
@@ -1310,15 +1311,9 @@ onUnmounted(() => {
           />
         </div>
         
-        <!-- 加载状态 -->
+        <!-- 加载状态：网盘平台环绕轨道动画 -->
         <div v-if="loading" class="search-loading-block card p-6">
-          <div class="space-y-3">
-            <div class="h-4 bg-muted rounded animate-pulse"></div>
-            <div class="h-4 bg-muted rounded animate-pulse w-3/4"></div>
-            <div class="h-4 bg-muted rounded animate-pulse w-1/2"></div>
-            <div class="h-4 bg-muted rounded animate-pulse w-2/3"></div>
-            <div class="h-4 bg-muted rounded animate-pulse"></div>
-          </div>
+          <LoadingOrbit :keyword="lastSearchParams?.kw" />
         </div>
         
         <!-- 搜索结果 -->
