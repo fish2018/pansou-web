@@ -90,6 +90,12 @@ export const getHealth = async (): Promise<HealthStatus> => {
   return response.data;
 };
 
+// SEARCH_TIMEOUT_MS 搜索请求的超时。
+//
+// 不能沿用 api 实例的 10 秒：服务端单个插件批次就允许到 PLUGIN_TIMEOUT（默认 10 秒），
+// 等于客户端和服务端同时到点，前端必然先报 ECONNABORTED。
+const SEARCH_TIMEOUT_MS = 45000;
+
 // 搜索API
 export const search = async (params: SearchParams): Promise<SearchResponse> => {
   // 添加ext参数，包含referer信息
@@ -98,7 +104,15 @@ export const search = async (params: SearchParams): Promise<SearchResponse> => {
     ext: JSON.stringify({ referer: "https://dm.xueximeng.com" })
   };
   
-  const response = await api.get<ApiResponse<SearchResponse>>('/search', { params: searchParams });
+  const response = await api.get<ApiResponse<SearchResponse>>('/search', {
+    params: searchParams,
+    // 搜索是慢请求：服务端允许插件批次用到 PLUGIN_TIMEOUT（默认 10 秒），
+    // 频道阶段还有各自的收集窗口。用 api 实例默认的 10 秒会在服务端还没返回时
+    // 就把请求掐掉——前端只看到 AxiosError: timeout of 10000ms exceeded，
+    // 而服务端其实还在后台跑（它用的是脱离请求的 context），结果白丢一次。
+    // 超时值必须大于服务端最坏情况，这里跟 gying 接口的 30 秒档保持一致偏保守。
+    timeout: SEARCH_TIMEOUT_MS,
+  });
   
   // 如果响应中包含data字段，则返回data
   if (response.data && response.data.data) {
