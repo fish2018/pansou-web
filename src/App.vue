@@ -5,7 +5,6 @@ import type { SearchResponse, MergedResults, ExportField, ExportSettings } from 
 import SearchForm from '@/components/SearchForm.vue';
 import ResultTabs from '@/components/ResultTabs.vue';
 import SearchStats from '@/components/SearchStats.vue';
-import LoadingOrbit from '@/components/LoadingOrbit.vue';
 import SearchConfig from '@/components/SearchConfig.vue';
 import ApiDocs from '@/components/ApiDocs.vue';
 import LoginDialog from '@/components/LoginDialog.vue';
@@ -1311,14 +1310,12 @@ onUnmounted(() => {
           />
         </div>
         
-        <!-- 加载状态：网盘平台环绕轨道动画 -->
-        <div v-if="loading" class="search-loading-block card p-6">
-          <LoadingOrbit />
-        </div>
-        
-        <!-- 搜索结果 -->
+        <!-- 搜索结果：结果区常驻，等待态由 ResultTabs 内部管理。
+             此前这里是 v-if="loading" 与 v-else 两块互斥：4 秒窗口结束时 loading 转 false，
+             整个结果块先卸载再重新挂载，新挂载的 LoadingOrbit 从第 0 帧开始播——
+             用户看到的就是"等待动画重置播放"+界面闪烁。
+             改成常驻后，同一个轨道实例从搜索开始连续播到出结果。 -->
         <div
-          v-else
           ref="searchResultsBlockRef"
           class="search-results-block"
           :style="mobileSearchResultsHeight ? {
@@ -1553,8 +1550,7 @@ onUnmounted(() => {
   }
 
   .search-form-block,
-  .search-stats-block,
-  .search-loading-block {
+  .search-stats-block {
     margin-bottom: 0 !important;
     min-height: 0;
   }

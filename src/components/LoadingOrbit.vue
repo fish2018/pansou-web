@@ -2,8 +2,9 @@
 // 搜索等待动画：网盘平台环绕轨道。
 //
 // 结构参考 quanpan 的 orbit 设计（双虚线轨道 + 12 个网盘图标公转 + 呼吸缩放 + 脉冲圈 + 漂浮粒子），
-// 但配色全部改为本项目的主色系：单一蓝色光晕，不再使用参考站的淡粉/淡绿/淡紫轮换，
-// 粒子也只保留蓝色族——参考站的绿蓝混搭与本项目白底+蓝主色不协调。
+// 配色只用本项目主色（pansou.css 的 --primary）与中性灰：不做光晕、不做脉冲圈——
+// 浅蓝光晕在白底卡片上会糊成一片发灰的蓝雾，显脏且与主题底色不协调；
+// 环绕感由虚线轨道 + 白色图标底盘 + 中心主色徽标表达，边界清晰。
 //
 // 关键点：单个 animation 同时完成「绕中心公转」与「自身反向自转」，两者在同一 transform 里抵消，
 // 图标才能严格保持正立；半径用 --r 变量，移动端只改半径即可。
@@ -34,21 +35,17 @@ const outerIcons = [
 
 // 粒子位置与漂移方向：颜色只在蓝色族里取
 const particles = [
-  { top: '18%', left: '26%', color: '#60a5fa', dx: '36px', dy: '-52px', dur: '3.4s' },
-  { top: '62%', left: '18%', color: '#93c5fd', dx: '-44px', dy: '-38px', dur: '4.2s' },
-  { top: '30%', left: '76%', color: '#3b82f6', dx: '30px', dy: '46px', dur: '3.8s' },
-  { top: '72%', left: '72%', color: '#bfdbfe', dx: '-34px', dy: '40px', dur: '4.6s' },
-  { top: '48%', left: '54%', color: '#60a5fa', dx: '26px', dy: '-30px', dur: '3.1s' },
+  { top: '18%', left: '26%', color: '#3b82f6', dx: '36px', dy: '-52px', dur: '3.4s' },
+  { top: '62%', left: '18%', color: '#60a5fa', dx: '-44px', dy: '-38px', dur: '4.2s' },
+  { top: '30%', left: '76%', color: '#2563eb', dx: '30px', dy: '46px', dur: '3.8s' },
+  { top: '72%', left: '72%', color: '#60a5fa', dx: '-34px', dy: '40px', dur: '4.6s' },
+  { top: '48%', left: '54%', color: '#3b82f6', dx: '26px', dy: '-30px', dur: '3.1s' },
 ];
 </script>
 
 <template>
   <div class="loading-orbit">
     <div class="orbit-wrap" aria-hidden="true">
-      <div class="pulse-ring"></div>
-      <div class="pulse-ring" style="animation-delay: 1.4s"></div>
-      <div class="pulse-ring" style="animation-delay: 2.8s"></div>
-
       <div class="orbit-center">
         <svg class="orbit-center-logo" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -111,54 +108,9 @@ const particles = [
   justify-content: center;
 }
 
-/* 中心光晕：本项目主色的单色光，缓慢呼吸，不再做多色轮换 */
-.orbit-wrap::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: radial-gradient(hsl(var(--primary, 217 91% 60%) / 0.16) 0%, rgba(255, 255, 255, 0) 70%);
-  animation: orbit-glow 4s ease-in-out infinite;
-}
-
-@keyframes orbit-glow {
-  0%,
-  100% {
-    opacity: 0.55;
-    transform: scale(0.94);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* 脉冲圈：白色在浅底上看不见，改用主色描边 */
-.pulse-ring {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 96px;
-  height: 96px;
-  margin: -48px 0 0 -48px;
-  border-radius: 50%;
-  border: 2px solid hsl(var(--primary, 217 91% 60%) / 0.35);
-  transform: scale(0.6);
-  opacity: 0;
-  animation: orbit-pulse 4.2s ease-out infinite;
-  pointer-events: none;
-}
-
-@keyframes orbit-pulse {
-  0% {
-    transform: scale(0.6);
-    opacity: 0.75;
-  }
-  100% {
-    transform: scale(1.8);
-    opacity: 0;
-  }
-}
+/* 这里原本有一层 340px 的主色径向渐变光晕，以及三个主色描边的脉冲圈。
+   在浅色卡片上它们叠成一片发灰的蓝雾，既显得脏，又和主题底色不协调，已全部移除。
+   现在只靠虚线轨道、白色图标底盘与中心主色徽标表达"环绕"，边界清晰不透光。 */
 
 .orbit-center {
   position: absolute;
@@ -174,7 +126,7 @@ const particles = [
   align-items: center;
   justify-content: center;
   z-index: 5;
-  box-shadow: 0 6px 18px hsl(var(--primary, 217 91% 60%) / 0.35);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.16);
 }
 
 .orbit-center-logo {
@@ -226,7 +178,7 @@ const particles = [
   height: 100%;
   border-radius: 50%;
   background: #fff;
-  border: 1px solid hsl(var(--primary, 217 91% 60%) / 0.12);
+  border: 1px solid rgba(15, 23, 42, 0.06);
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
   overflow: hidden;
   transform-origin: center;
