@@ -64,6 +64,13 @@ export interface LivenessReport {
   degraded_plugins?: LivenessItem[];
   failing_channels?: LivenessItem[];
   zero_yield_channels?: LivenessItem[];
+  // 各分类截断前的完整数量：列表每类最多 40 条，用 count > items.length 判断是否被截断
+  failing_plugin_count?: number;
+  zero_yield_plugin_count?: number;
+  degraded_plugin_count?: number;
+  failing_channel_count?: number;
+  zero_yield_channel_count?: number;
+  truncated?: string[];
 }
 
 export interface HealthStatus {

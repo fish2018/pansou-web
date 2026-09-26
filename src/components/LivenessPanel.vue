@@ -78,6 +78,24 @@ const summaryOf = (status?: Record<string, number>) => {
   ];
 };
 
+// 分组标题里的数量：优先用后端的完整计数，并显式提示"还有多少没列出"，
+// 避免 40 条上限把超出的条目悄悄藏起来。
+const groupLabel = (g: { key: string; items: LivenessItem[] }) => {
+  const lv = liveness.value;
+  const full: Record<string, number | undefined> = {
+    failing: lv?.failing_plugin_count,
+    degraded: lv?.degraded_plugin_count,
+    zero_yield: lv?.zero_yield_plugin_count,
+    chan_failing: lv?.failing_channel_count,
+    chan_zero: lv?.zero_yield_channel_count,
+  };
+  const total = full[g.key] ?? g.items.length;
+  if (total > g.items.length) {
+    return `共 ${total} · 已列出 ${g.items.length}`;
+  }
+  return `${g.items.length}`;
+};
+
 const itemStat = (it: LivenessItem) => {
   const parts = [`${it.rounds} 轮`];
   if (it.failed > 0) parts.push(`失败 ${it.failed}`);
@@ -123,7 +141,7 @@ defineExpose({ fetchLiveness });
           <button class="liveness-group-toggle" @click="expanded[g.key] = !expanded[g.key]">
             <span class="toggle-icon" :class="{ expanded: expanded[g.key] }">▶</span>
             {{ g.title }}
-            <span class="liveness-group-count" :class="g.tone">{{ g.items.length }}</span>
+            <span class="liveness-group-count" :class="g.tone">{{ groupLabel(g) }}</span>
           </button>
           <p v-if="g.hint" class="liveness-hint">{{ g.hint }}</p>
           <div v-show="expanded[g.key]" class="liveness-list">
@@ -148,7 +166,7 @@ defineExpose({ fetchLiveness });
           <button class="liveness-group-toggle" @click="expanded[g.key] = !expanded[g.key]">
             <span class="toggle-icon" :class="{ expanded: expanded[g.key] }">▶</span>
             {{ g.title }}
-            <span class="liveness-group-count" :class="g.tone">{{ g.items.length }}</span>
+            <span class="liveness-group-count" :class="g.tone">{{ groupLabel(g) }}</span>
           </button>
           <div v-show="expanded[g.key]" class="liveness-list">
             <div v-for="it in g.items" :key="it.name" class="liveness-row">
@@ -160,6 +178,7 @@ defineExpose({ fetchLiveness });
         <p v-if="channelGroups.length === 0" class="liveness-msg ok">所有频道均正常</p>
       </div>
 
+      <p v-for="msg in liveness.truncated ?? []" :key="msg" class="liveness-msg warn">⚠️ {{ msg }}</p>
       <p class="liveness-note">{{ liveness.note }}</p>
     </template>
   </div>
@@ -367,5 +386,9 @@ defineExpose({ fetchLiveness });
 
 .liveness-msg.ok {
   color: #15803d;
+}
+
+.liveness-msg.warn {
+  color: #b45309;
 }
 </style>
