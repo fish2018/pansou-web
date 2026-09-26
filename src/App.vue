@@ -1549,6 +1549,8 @@ onUnmounted(() => {
     gap: 1rem;
   }
 
+  /* 统计栏与表单块不能做 flex 容器：里面的 .card 是 flex 子项，会按内容宽度收缩成一小条。
+     只有结果块需要 flex（它内部自己管理高度与滚动）。 */
   .search-form-block,
   .search-stats-block {
     margin-bottom: 0 !important;
