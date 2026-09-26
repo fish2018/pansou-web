@@ -3,6 +3,7 @@ import type {
   PanlianStatusResponse,
   PanlianLoginResponse,
   PanlianLogoutResponse,
+  PanlianCaptchaResponse,
   PanlianSearchResponse
 } from '@/types/panlian'
 
@@ -41,15 +42,45 @@ export const getStatus = async (hash: string): Promise<PanlianStatusResponse> =>
   return response.data
 }
 
+// 图形验证码：站点每次登录都要，由用户肉眼识别后回填，插件不做识别。
+export const getCaptcha = async (hash: string): Promise<PanlianCaptchaResponse> => {
+  const response = await panlianApi.post<PanlianCaptchaResponse>(`/${hash}`, {
+    action: 'captcha'
+  })
+  return response.data
+}
+
 export const login = async (
   hash: string,
   username: string,
-  password: string
+  password: string,
+  captchaId: string,
+  captchaCode: string
 ): Promise<PanlianLoginResponse> => {
   const response = await panlianApi.post<PanlianLoginResponse>(`/${hash}`, {
     action: 'login',
     username,
-    password
+    password,
+    captcha_id: captchaId,
+    captcha_code: captchaCode
+  })
+  return response.data
+}
+
+// 登录第二步：提交站点下发的 confirm_id 与账号绑定的邮箱，通过后即拿到会话。
+export const confirmEmail = async (
+  hash: string,
+  username: string,
+  password: string,
+  confirmId: string,
+  email: string
+): Promise<PanlianLoginResponse> => {
+  const response = await panlianApi.post<PanlianLoginResponse>(`/${hash}`, {
+    action: 'confirm_email',
+    username,
+    password,
+    confirm_id: confirmId,
+    email
   })
   return response.data
 }
@@ -84,7 +115,9 @@ export const getHashByIdentifier = async (identifier: string): Promise<string> =
 
 export default {
   getStatus,
+  getCaptcha,
   login,
+  confirmEmail,
   logout,
   testSearch,
   getHashByIdentifier

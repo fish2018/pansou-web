@@ -22,10 +22,27 @@ export interface PanlianStatusResponse extends PanlianBaseResponse {
   data: PanlianStatus
 }
 
+// 登录响应复用同一个信封：可能直接成功，也可能停在"需要邮箱确认"这一步。
+// 失败时 data 里会带 captcha_required / captcha_invalid，前端据此自动换一张验证码。
+export interface PanlianLoginData {
+  username?: string
+  status?: string
+  need_email?: boolean
+  confirm_id?: string
+  email_hint?: string
+  captcha_required?: boolean
+  captcha_invalid?: boolean
+}
+
 export interface PanlianLoginResponse extends PanlianBaseResponse {
+  data: PanlianLoginData
+}
+
+// 站点自 2026 年起登录必须先过图形验证码：image 是 base64 data URL，captcha_id 回填登录请求。
+export interface PanlianCaptchaResponse extends PanlianBaseResponse {
   data: {
-    username: string
-    status: string
+    captcha_id: string
+    image: string
   }
 }
 

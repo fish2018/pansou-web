@@ -38,6 +38,17 @@ const loginUsername = ref('')
 const loginPassword = ref('')
 const loggingIn = ref(false)
 
+// 站点自 2026 年起登录改成三步：图形验证码 → 账号密码 → 输入账号绑定的邮箱。
+// 验证码只能靠人眼看图，插件不做识别，所以整条流程由这个向导带着用户走完。
+const captchaId = ref('')
+const captchaImage = ref('')
+const captchaCode = ref('')
+const loadingCaptcha = ref(false)
+const needEmail = ref(false)
+const confirmId = ref('')
+const emailHint = ref('')
+const loginEmail = ref('')
+
 const searchKeyword = ref('')
 const searchResults = ref<PanlianSearchResult[]>([])
 const searching = ref(false)
@@ -138,6 +149,12 @@ const loadStatus = async () => {
         selectedUser.value.last_login = new Date().toISOString()
         addUserToList(selectedUser.value.username, selectedUser.value.hash)
       }
+      if (!response.data.logged_in) {
+        // 未登录就把验证码准备好，用户点登录时不用等图。
+        void loadCaptcha()
+      } else {
+        resetLoginFlow()
+      }
     }
   } catch (error) {
     console.error('获取状态失败:', error)
@@ -185,11 +202,47 @@ const handleBackToList = () => {
   loginPassword.value = ''
   searchKeyword.value = ''
   searchResults.value = []
+  resetLoginFlow()
 }
 
 const handleShowAddForm = () => {
   currentView.value = 'add'
   identifier.value = ''
+}
+
+const loadCaptcha = async () => {
+  if (!currentHash.value) return
+  loadingCaptcha.value = true
+  try {
+    const response = await panlianApi.getCaptcha(currentHash.value)
+    if (response.success && response.data) {
+      captchaId.value = response.data.captcha_id
+      captchaImage.value = response.data.image
+      captchaCode.value = ''
+    } else {
+      showAlertMessage(response.message || '获取验证码失败', 'error')
+    }
+  } catch (error: any) {
+    console.error('获取验证码失败:', error)
+    showAlertMessage(error.response?.data?.message || '获取验证码失败', 'error')
+  } finally {
+    loadingCaptcha.value = false
+  }
+}
+
+const resetLoginFlow = () => {
+  needEmail.value = false
+  confirmId.value = ''
+  emailHint.value = ''
+  loginEmail.value = ''
+  captchaCode.value = ''
+}
+
+const backToLoginStep = () => {
+  needEmail.value = false
+  confirmId.value = ''
+  emailHint.value = ''
+  void loadCaptcha()
 }
 
 const handleLogin = async () => {
@@ -198,25 +251,80 @@ const handleLogin = async () => {
     showAlertMessage('请输入用户名和密码', 'error')
     return
   }
+  if (!captchaCode.value.trim()) {
+    showAlertMessage('请输入图中验证码', 'error')
+    return
+  }
 
   loggingIn.value = true
   try {
     const response = await panlianApi.login(
       currentHash.value,
       loginUsername.value.trim(),
-      loginPassword.value.trim()
+      loginPassword.value.trim(),
+      captchaId.value,
+      captchaCode.value.trim()
     )
+    const data = response.data || {}
+
+    // 第二步：站点要求输入该账号绑定的邮箱，密码与验证码这一步已经过了。
+    if (response.success && data.need_email) {
+      needEmail.value = true
+      confirmId.value = data.confirm_id || ''
+      emailHint.value = data.email_hint || ''
+      showAlertMessage('请继续输入该账号绑定的邮箱完成验证', 'success')
+      return
+    }
     if (response.success) {
       showAlertMessage('登录成功！', 'success')
+      resetLoginFlow()
       loginPassword.value = ''
       await loadStatus()
-    } else {
-      showAlertMessage(response.message || '登录失败', 'error')
+      return
+    }
+
+    showAlertMessage(response.message || '登录失败', 'error')
+    // 验证码错/过期由后端标记，这里自动换一张，用户不用手动点。
+    if (data.captcha_required || data.captcha_invalid) {
+      await loadCaptcha()
     }
   } catch (error: any) {
     console.error('登录失败:', error)
     const message = error.response?.data?.message || '登录失败'
     showAlertMessage(message, 'error')
+    await loadCaptcha()
+  } finally {
+    loggingIn.value = false
+  }
+}
+
+const handleConfirmEmail = async () => {
+  if (!currentHash.value || !confirmId.value) return
+  if (!loginEmail.value.trim()) {
+    showAlertMessage('请输入该账号绑定的邮箱', 'error')
+    return
+  }
+
+  loggingIn.value = true
+  try {
+    const response = await panlianApi.confirmEmail(
+      currentHash.value,
+      loginUsername.value.trim(),
+      loginPassword.value,
+      confirmId.value,
+      loginEmail.value.trim()
+    )
+    if (response.success) {
+      showAlertMessage('登录成功！', 'success')
+      resetLoginFlow()
+      loginPassword.value = ''
+      await loadStatus()
+    } else {
+      showAlertMessage(response.message || '邮箱确认失败', 'error')
+    }
+  } catch (error: any) {
+    console.error('邮箱确认失败:', error)
+    showAlertMessage(error.response?.data?.message || '邮箱确认失败', 'error')
   } finally {
     loggingIn.value = false
   }
@@ -493,14 +601,60 @@ onMounted(() => {
                       @keyup.enter="handleLogin"
                     />
                   </div>
+                  <div v-if="!needEmail">
+                    <label class="block text-sm font-medium mb-2">图形验证码</label>
+                    <div class="captcha-row">
+                      <Input
+                        v-model="captchaCode"
+                        placeholder="输入图中字符"
+                        @keyup.enter="handleLogin"
+                      />
+                      <img
+                        v-if="captchaImage"
+                        :src="captchaImage"
+                        alt="验证码"
+                        title="点击换一张"
+                        class="captcha-image"
+                        @click="loadCaptcha"
+                      />
+                    </div>
+                    <p class="captcha-tip">
+                      {{ loadingCaptcha ? '验证码加载中...' : '看不清？点图片换一张' }}
+                    </p>
+                  </div>
+                  <div v-else>
+                    <label class="block text-sm font-medium mb-2">账号绑定的邮箱</label>
+                    <Input
+                      v-model="loginEmail"
+                      placeholder="输入该账号绑定的邮箱"
+                      @keyup.enter="handleConfirmEmail"
+                    />
+                    <p class="captcha-tip">
+                      站点为确认本人操作，需要该账号绑定的邮箱<template v-if="emailHint">（形如 {{ emailHint }}）</template>
+                    </p>
+                  </div>
                   <Button
+                    v-if="!needEmail"
                     @click="handleLogin"
-                    :disabled="loggingIn || !loginUsername.trim() || !loginPassword.trim()"
+                    :disabled="loggingIn || !loginUsername.trim() || !loginPassword.trim() || !captchaCode.trim()"
                     :loading="loggingIn"
                     class="w-full login-button"
                   >
                     {{ loggingIn ? '登录中...' : '登录' }}
                   </Button>
+                  <template v-else>
+                    <Button
+                      @click="handleConfirmEmail"
+                      :disabled="loggingIn || !loginEmail.trim()"
+                      :loading="loggingIn"
+                      class="w-full login-button"
+                    >
+                      {{ loggingIn ? '验证中...' : '确认邮箱并完成登录' }}
+                    </Button>
+                    <Button @click="backToLoginStep" variant="outline" size="sm" class="w-full">
+                      返回上一步
+                    </Button>
+                  </template>
                 </div>
               </div>
             </div>
@@ -980,5 +1134,25 @@ onMounted(() => {
   .link-extra {
     padding-left: 0;
   }
+}
+.captcha-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.captcha-image {
+  height: 2.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid hsl(var(--border));
+  cursor: pointer;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.captcha-tip {
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
 }
 </style>
