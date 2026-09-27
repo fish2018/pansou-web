@@ -186,7 +186,8 @@ const handleAddUser = async () => {
     await Promise.all([loadStatus(), loadConfig()])
   } catch (error) {
     console.error('获取hash失败:', error)
-    showAlertMessage('获取hash失败', 'error')
+    const detail = error instanceof Error ? error.message : ''
+    showAlertMessage(detail && detail !== '无法从重定向URL中提取hash' ? detail : '获取hash失败', 'error')
   } finally {
     generatingHash.value = false
   }

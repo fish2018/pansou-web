@@ -173,6 +173,23 @@ fi)
         proxy_buffering off;
     }
 
+    # 蜗牛插件请求 - 代理到Go后端
+    # 缺这一块时 /woniu/xxx 会落进下面 location / 的 SPA 回退（try_files ... /index.html），
+    # 返回 200 的 index.html，后端根本没收到请求，前端拿不到 302 里的 hash。
+    # 登录与测试搜索要等站点在 Cloudflare 后面握手并抓详情页，超时向 gying 看齐。
+    location /woniu/ {
+        proxy_pass http://${PANSOU_HOST}:${PANSOU_PORT}/woniu/;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Referer \$http_referer;
+        proxy_connect_timeout 15s;
+        proxy_read_timeout 180s;
+        proxy_send_timeout 30s;
+        proxy_buffering off;
+    }
+
     # 其他API请求 - 代理到Go后端
     location /api/ {
         proxy_pass http://${PANSOU_HOST}:${PANSOU_PORT}/api/;
