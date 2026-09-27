@@ -54,6 +54,10 @@ export default defineConfig(({ mode }) => {
         '/weibo': {
           target: env.VITE_API_BASE_URL || 'http://localhost:8888',
           changeOrigin: true
+        },
+        '/woniu': {
+          target: env.VITE_API_BASE_URL || 'http://localhost:8888',
+          changeOrigin: true
         }
       }
     }

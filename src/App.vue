@@ -13,6 +13,7 @@ import AccountCenter from '@/components/AccountCenter.vue';
 import GyingManager from '@/components/GyingManager.vue';
 import PanlianManager from '@/components/PanlianManager.vue';
 import WeiboManager from '@/components/WeiboManager.vue';
+import WoniuManager from '@/components/WoniuManager.vue';
 import ExportResultsModal from '@/components/ExportResultsModal.vue';
 import { getDiskTypeName } from '@/utils/diskTypes';
 
@@ -75,7 +76,7 @@ const exportableDiskTypes = computed(() => {
 let forceRefreshPending = false;
 
 // 当前页面状态
-const currentPage = ref<'search' | 'status' | 'docs' | 'accounts' | 'qqpd' | 'gying' | 'panlian' | 'weibo'>('search');
+const currentPage = ref<'search' | 'status' | 'docs' | 'accounts' | 'qqpd' | 'gying' | 'panlian' | 'weibo' | 'woniu'>('search');
 
 // 登录状态
 const showLogin = ref(false);
@@ -94,9 +95,12 @@ const isPanlianEnabled = ref(false);
 // Weibo插件状态
 const isWeiboEnabled = ref(false);
 
+// 蜗牛
+const isWoniuEnabled = ref(false);
+
 // 检查是否有需要账号管理的服务
 const hasAccountServices = computed(() => {
-  return isQQPDEnabled.value || isGyingEnabled.value || isPanlianEnabled.value || isWeiboEnabled.value;
+  return isQQPDEnabled.value || isGyingEnabled.value || isPanlianEnabled.value || isWeiboEnabled.value || isWoniuEnabled.value;
 });
 
 // 页面切换
@@ -128,8 +132,12 @@ const switchToWeibo = () => {
   currentPage.value = 'weibo';
 };
 
+const switchToWoniu = () => {
+  currentPage.value = 'woniu';
+};
+
 // 从账号中心导航到具体服务
-const handleAccountNavigate = (service: 'qqpd' | 'gying' | 'panlian' | 'weibo') => {
+const handleAccountNavigate = (service: 'qqpd' | 'gying' | 'panlian' | 'weibo' | 'woniu') => {
   if (service === 'qqpd') {
     switchToQQPD();
   } else if (service === 'gying') {
@@ -138,6 +146,8 @@ const handleAccountNavigate = (service: 'qqpd' | 'gying' | 'panlian' | 'weibo') 
     switchToPanlian();
   } else if (service === 'weibo') {
     switchToWeibo();
+  } else if (service === 'woniu') {
+    switchToWoniu();
   }
 };
 
@@ -1116,6 +1126,35 @@ const checkWeiboPlugin = () => {
   }
 };
 
+// 检查蜗牛插件是否启用
+const checkWoniuPlugin = () => {
+  try {
+    const backendSupportsWoniu = backendHealth.value?.plugins?.includes('woniu') || false;
+
+    if (!backendSupportsWoniu) {
+      isWoniuEnabled.value = false;
+      return;
+    }
+
+    try {
+      const savedPlugins = localStorage.getItem('pansou_plugins');
+
+      if (savedPlugins === null) {
+        isWoniuEnabled.value = true;
+      } else {
+        const plugins = JSON.parse(savedPlugins);
+        isWoniuEnabled.value = Array.isArray(plugins) && plugins.includes('woniu');
+      }
+    } catch (err) {
+      console.error('读取用户插件配置失败:', err);
+      isWoniuEnabled.value = true;
+    }
+  } catch (error) {
+    console.error('检查蜗牛插件失败:', error);
+    isWoniuEnabled.value = false;
+  }
+};
+
 // 监听localStorage变化，当用户配置改变时更新插件状态
 const handleStorageChange = (e: StorageEvent) => {
   // 只关心插件配置的变化
@@ -1124,6 +1163,7 @@ const handleStorageChange = (e: StorageEvent) => {
     checkGyingPlugin();
     checkPanlianPlugin();
     checkWeiboPlugin();
+    checkWoniuPlugin();
   }
 };
 
@@ -1133,6 +1173,7 @@ const handleConfigSaved = () => {
   checkGyingPlugin();
   checkPanlianPlugin();
   checkWeiboPlugin();
+  checkWoniuPlugin();
 };
 
 // 强制刷新处理
@@ -1158,6 +1199,7 @@ onMounted(async () => {
   checkGyingPlugin();
   checkPanlianPlugin();
   checkWeiboPlugin();
+  checkWoniuPlugin();
   
   // 监听事件
   window.addEventListener('auth:required', handleAuthRequired);
@@ -1251,7 +1293,7 @@ onUnmounted(() => {
             v-if="hasAccountServices"
             @click="switchToAccounts"
             class="nav-button"
-            :class="{ 'active': currentPage === 'accounts' || currentPage === 'qqpd' || currentPage === 'gying' || currentPage === 'panlian' || currentPage === 'weibo' }"
+            :class="{ 'active': currentPage === 'accounts' || currentPage === 'qqpd' || currentPage === 'gying' || currentPage === 'panlian' || currentPage === 'weibo' || currentPage === 'woniu' }"
             title="账号管理"
           >
             <span class="nav-icon">
@@ -1378,6 +1420,11 @@ onUnmounted(() => {
       <!-- 微博管理页面 -->
       <div v-else-if="currentPage === 'weibo'" class="weibo-page">
         <WeiboManager @back-to-center="switchToAccounts" />
+      </div>
+
+      <!-- 蜗牛管理页面 -->
+      <div v-else-if="currentPage === 'woniu'" class="woniu-page">
+        <WoniuManager @back-to-center="switchToAccounts" />
       </div>
     </main>
     
