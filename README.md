@@ -42,7 +42,7 @@ Docker会自动选择适合您系统的架构版本。
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
 | `DOMAIN` | `localhost` | 访问域名 |
-| `ENABLED_PLUGINS` | `dyyjpro,duoduo,djgou,feikuai,gaoqing888,gying,hdmoli,haitunsou,hunhepan,ikantv,jutoushe,kkv,dy4k,libvio,lingjisp,lou1,melost,meitizy,miosou,nyaa,ouge,panlian,pansearch,qqpd,quark4k,quarksoo,quarktv,qupanshe,sousou,thepiratebay,ting77,wanou,weibo,xb6v,xiaokupan,xiaozhang,xiaoyu,yingso,yulinshufa,yunso,yunsou,zlxapp,zxzj` | 启用的搜索插件（逗号分隔） |
+| `ENABLED_PLUGINS` | `dyyjpro,duoduo,feikuai,gaoqing888,gying,hdmoli,haitunsou,hunhepan,ikantv,jutoushe,kkv,libvio,lingjisp,lou1,melost,meitizy,miosou,nyaa,ouge,panlian,pansearch,qqpd,quark4k,quarksoo,quarktv,qupanshe,sousou,thepiratebay,ting77,wanou,weibo,xb6v,xiaokupan,xiaozhang,xiaoyu,yunso,yunsou,zlxapp,zxzj` | 启用的搜索插件（逗号分隔） |
 
 > 🔌 **重要变更**: 从当前版本开始，必须通过 `ENABLED_PLUGINS` 显式指定要启用的插件，否则不会启用任何插件。
 
