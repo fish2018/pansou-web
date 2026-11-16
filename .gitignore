@@ -28,3 +28,19 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+# Local credentials and runtime data
+.env
+.env.*
+*.env
+*.env.*
+!.env.example
+!*.env.example
+*.pem
+*.key
+*.sqlite
+*.sqlite-*
+
+# Browser regression artifacts
+/test-results/
+/playwright-report/
