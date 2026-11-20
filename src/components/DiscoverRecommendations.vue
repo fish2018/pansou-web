@@ -70,6 +70,7 @@ const requestKey = computed(() => JSON.stringify([category.value, collection.val
 const displayedPage = computed(() => data.value?.page || 1);
 const totalPages = computed(() => Math.max(1, Math.ceil((data.value?.total || 0) / (data.value?.page_size || 24))));
 const catalogTotal = computed(() => data.value?.catalog_total ?? data.value?.total ?? 0);
+const sourceWarning = computed(() => typeof data.value?.warning === 'string' ? data.value.warning.trim() : '');
 const catalogSync = computed(() => data.value?.catalog_sync?.enabled ? data.value.catalog_sync : null);
 const catalogSyncLabel = computed(() => {
   const status = catalogSync.value;
@@ -279,8 +280,9 @@ const showDetails = async (item: DiscoverItem) => {
   try {
     const subject = await getDiscoverSubject(id, mediaType, signal);
     if (signal.aborted) return;
-    const ttl = data.value?.tmdb_configured === true && subject.metadata_source !== 'tmdb'
-      ? 5_000 : SUBJECT_CACHE_TTL;
+    const pendingDetails = subject.details_cached === false
+      || (data.value?.tmdb_configured === true && subject.metadata_source !== 'tmdb');
+    const ttl = pendingDetails ? 5_000 : SUBJECT_CACHE_TTL;
     subjectCache.set(key, { item: subject, expiresAt: Date.now() + ttl });
     selected.value = mergeSubject(item, subject);
   } catch {
@@ -388,6 +390,8 @@ onUnmounted(() => {
       <button v-else-if="!isLibrary" class="batch-button" type="button" :disabled="refreshing" @click="nextBatch"><svg :class="{ spinning: refreshing }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 18 17" stroke-linecap="round"/></svg>换一批</button>
     </div>
 
+    <p v-if="sourceWarning" class="source-warning" role="status">{{ sourceWarning }}</p>
+
     <div v-if="loading" class="recommendation-grid" aria-label="正在加载推荐" aria-busy="true">
       <div v-for="index in (isLibrary ? 24 : pageSize)" :key="index" class="recommendation-skeleton" aria-hidden="true"><div class="skeleton-poster"/><div class="skeleton-line"/><div class="skeleton-line short"/></div>
     </div>
@@ -454,6 +458,7 @@ onUnmounted(() => {
 
 <style scoped>
 .discover { max-width: 1200px; margin: 0 auto; padding: 0.75rem 0 1.5rem; }
+.source-warning { margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: 0.5rem; background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); font-size: 0.8125rem; line-height: 1.6; }
 .discover-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.75rem; }
 .discover-eyebrow { display: inline-flex; align-items: center; gap: 0.4rem; color: hsl(var(--primary)); font-size: 0.75rem; letter-spacing: 0.08em; font-weight: 600; }
 .discover-eyebrow > span { font-size: 1rem; }

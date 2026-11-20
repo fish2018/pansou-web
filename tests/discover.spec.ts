@@ -587,6 +587,45 @@ test('启用 TMDB 后旧豆瓣详情只缓存五秒，增强后的 TMDB 详情�
   expect(requests).toBe(2);
 });
 
+test('服务端明确标记待刷新时，TMDB 旧详情只缓存五秒且兼容无标记响应', async ({ page }) => {
+  await page.clock.install();
+  await mockHealth(page);
+  const film = { ...items[0], id: 'tmdb:tv:12345', title: '等待更新的剧集', media_type: 'tv',
+    metadata_source: 'tmdb', details_cached: false };
+  await page.route('**/api/discover?**', route => route.fulfill({ json: {
+    ...payload, tmdb_configured: true, items: [film]
+  } }));
+  let requests = 0;
+  await page.route('**/api/discover/subject?**', route => {
+    requests++;
+    // Older API responses omit the cache flag. Preserve their existing long
+    // cache behavior; only an explicit false makes completed TMDB data stale.
+    const { details_cached: _, ...compatible } = film;
+    return route.fulfill({ json: { ...compatible,
+      ...(requests === 1 ? { details_cached: false } : {}),
+      overview: requests === 1 ? '暂时保留的 TMDB 旧资料' : '重新取得的 TMDB 完整资料'
+    } });
+  });
+  await page.goto('/');
+  const openDetails = page.getByRole('button', { name: '查看《等待更新的剧集》详情', exact: true });
+  await openDetails.click();
+  await expect(page.getByRole('dialog')).toContainText('暂时保留的 TMDB 旧资料');
+  await page.keyboard.press('Escape');
+  await openDetails.click();
+  await expect(page.getByRole('dialog')).toContainText('暂时保留的 TMDB 旧资料');
+  expect(requests).toBe(1);
+  await page.keyboard.press('Escape');
+  await page.clock.fastForward(5_001);
+  await openDetails.click();
+  await expect(page.getByRole('dialog')).toContainText('重新取得的 TMDB 完整资料');
+  expect(requests).toBe(2);
+  await page.keyboard.press('Escape');
+  await page.clock.setSystemTime(Date.now() + 6 * 60 * 60_000);
+  await openDetails.click();
+  await expect(page.getByRole('dialog')).toContainText('重新取得的 TMDB 完整资料');
+  expect(requests).toBe(2);
+});
+
 test('TMDB 电影与剧集使用各自详情 ID，缺少豆瓣关联时不显示评分或豆瓣链接', async ({ page }) => {
   await mockHealth(page);
   const films = [
@@ -664,6 +703,35 @@ const libraryTopPager = (page: Page) => page.getByRole('navigation', { name: '�
 const yearFilter = (page: Page) => page.getByRole('group', { name: '作品年份', exact: true });
 const mainYears = (page: Page) => yearFilter(page).locator('.year-options').first();
 const moreYears = (page: Page) => page.getByRole('group', { name: '全部年份', exact: true });
+
+test('服务端片库警告在有作品和空列表时均可见，恢复后清除', async ({ page }) => {
+  await page.clock.install();
+  await mockHealth(page);
+  let warned = true;
+  let empty = false;
+  const warning = '完整片库暂时不可用，当前显示原有已收录作品。';
+  await page.route('**/api/discover?**', route => {
+    const url = new URL(route.request().url());
+    return route.fulfill({ json: url.searchParams.get('collection') === 'library' ? {
+      ...catalogPage(1), warning: warned ? warning : undefined,
+      ...(empty ? { items: [], total: 0, has_more: false } : {})
+    } : payload });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: '影视片库', exact: true }).click();
+  const notice = page.getByRole('status').filter({ hasText: warning });
+  await expect(page.locator('.recommendation-card')).toHaveCount(24);
+  await expect(notice).toBeVisible();
+  empty = true;
+  await page.clock.fastForward(60_001);
+  await expect(page.locator('.recommendation-card')).toHaveCount(0);
+  await expect(page.getByText('未找到匹配的已收录作品', { exact: true })).toBeVisible();
+  await expect(notice).toBeVisible();
+  warned = empty = false;
+  await page.clock.fastForward(60_001);
+  await expect(page.locator('.recommendation-card')).toHaveCount(24);
+  await expect(notice).toHaveCount(0);
+});
 
 test('全目录同步显示收录和资料进度，空目录与重试状态仍可查看', async ({ page }) => {
   await page.clock.install();
