@@ -7,6 +7,7 @@ import { Button, Input, Icons } from '@/components/ui';
 import FilterIcon from '@/components/icons/FilterIcon.vue';
 
 const keyword = ref('');
+const configError = ref('');
 const loading = ref(false);
 const showAdvanced = ref(false);
 const includeKeywords = ref('');
@@ -63,11 +64,10 @@ const loadUserConfig = () => {
 };
 
 const handleSearch = () => {
+  configError.value = '';
   if (!keyword.value.trim()) {
     return;
   }
-  
-  loading.value = true;
   
   // 加载配置（用户设置或后端默认缓存）
   const userConfig = loadUserConfig();
@@ -75,6 +75,15 @@ const handleSearch = () => {
   // 判断有哪些数据源
   const hasChannels = userConfig.channels && userConfig.channels.length > 0;
   const hasPlugins = userConfig.plugins && userConfig.plugins.length > 0;
+  if (!hasChannels && !hasPlugins) {
+    configError.value = '请在配置中至少启用一个搜索来源';
+    return;
+  }
+  if (userConfig.cloudTypes?.length === 0) {
+    configError.value = '请在配置中至少选择一种网盘类型';
+    return;
+  }
+  loading.value = true;
   
   // 根据搜索逻辑决定第一次搜索的src参数：
   // 1. 如果同时启用了tg和plugin，第一次只搜索tg
@@ -131,10 +140,19 @@ const handleSearch = () => {
     // 不再触发searchComplete事件
   }, 2000);
 };
+
+// 推荐卡片复用搜索表单的来源、网盘和高级筛选设置。
+const searchFor = (value: string) => {
+  keyword.value = value;
+  handleSearch();
+};
+
+defineExpose({ searchFor });
 </script>
 
 <template>
   <div class="w-full max-w-content mx-auto">
+    <p v-if="configError" role="alert" class="mb-2 text-sm text-destructive">{{ configError }}</p>
     <div class="search-container">
       <!-- 主搜索框 -->
       <div class="relative w-full">

@@ -3,6 +3,7 @@ import { ref, reactive, onMounted, onUnmounted, computed, nextTick, watch } from
 import { search, logout, getHealth, verifyToken, type SearchParams, type HealthStatus } from '@/api';
 import type { SearchResponse, MergedResults, ExportField, ExportSettings } from '@/types';
 import SearchForm from '@/components/SearchForm.vue';
+import DiscoverRecommendations from '@/components/DiscoverRecommendations.vue';
 import ResultTabs from '@/components/ResultTabs.vue';
 import SearchStats from '@/components/SearchStats.vue';
 import SearchConfig from '@/components/SearchConfig.vue';
@@ -42,6 +43,8 @@ const thirdSearchTimeout = ref<number | null>(null);
 const fourthSearchTimeout = ref<number | null>(null);
 const lastSearchParams = ref<SearchParams | null>(null);
 const showExportModal = ref(false);
+const searchFormRef = ref<InstanceType<typeof SearchForm> | null>(null);
+const showRecommendations = ref(true);
 const navHeaderRef = ref<HTMLElement | null>(null);
 const mainContentRef = ref<HTMLElement | null>(null);
 const footerRef = ref<HTMLElement | null>(null);
@@ -194,6 +197,7 @@ const checkConfig = () => {
 
 // 处理搜索
 const handleSearch = async (params: SearchParams) => {
+  showRecommendations.value = false;
   // 停止之前的更新
   stopUpdate();
 
@@ -305,8 +309,8 @@ const applyKeywordFilter = (results: any, filterStr: string) => {
   
   try {
     const filter = JSON.parse(filterStr);
-    const includeKeywords = (filter.include || []).map((k: string) => k.toLowerCase());
-    const excludeKeywords = (filter.exclude || []).map((k: string) => k.toLowerCase());
+    const includeKeywords: string[] = (filter.include || []).map((k: string) => k.toLowerCase());
+    const excludeKeywords: string[] = (filter.exclude || []).map((k: string) => k.toLowerCase());
     
     if (includeKeywords.length === 0 && excludeKeywords.length === 0) {
       return results;
@@ -683,7 +687,7 @@ const handleExportConfirm = () => {
 };
 
 const updateMobileSearchResultsHeight = () => {
-  if (typeof window === 'undefined' || window.innerWidth > 768) {
+  if (typeof window === 'undefined' || window.innerWidth > 768 || showRecommendations.value) {
     mobileSearchResultsHeight.value = '';
     return;
   }
@@ -710,7 +714,7 @@ const syncMobileSearchLayout = () => {
 };
 
 watch(
-  () => [currentPage.value, hasSearched.value, loading.value, searchResults.total, isActivelySearching.value],
+  () => [currentPage.value, showRecommendations.value, hasSearched.value, loading.value, searchResults.total, isActivelySearching.value],
   () => {
     syncMobileSearchLayout();
   },
@@ -933,6 +937,7 @@ const resetToInitial = () => {
   
   // 重置所有状态
   hasSearched.value = false;
+  showRecommendations.value = true;
   isActivelySearching.value = false;
   loading.value = false;
   searchResults.total = 0;
@@ -1324,21 +1329,33 @@ onUnmounted(() => {
     <main
       ref="mainContentRef"
       class="main-content container mx-auto px-4 py-8 flex-1"
-      :class="{ 'search-main': currentPage === 'search' }"
+      :class="{ 'search-main': currentPage === 'search', 'recommendations-main': currentPage === 'search' && showRecommendations }"
     >
       <!-- 搜索页面 -->
-      <div v-if="currentPage === 'search'" class="search-page">
+      <div v-if="currentPage === 'search'" class="search-page" :class="{ 'recommendations-page': showRecommendations }">
         <!-- 搜索表单 -->
         <div class="search-form-block mb-6">
           <SearchForm 
+            ref="searchFormRef"
             :backend-health="backendHealth"
             @search="handleSearch" 
             @search-complete="handleSearchComplete"
           />
+          <div v-if="hasSearched" class="search-view-actions">
+            <button type="button" @click="showRecommendations = !showRecommendations">
+              {{ showRecommendations ? '查看搜索结果 →' : '← 返回推荐' }}
+            </button>
+          </div>
         </div>
+
+        <DiscoverRecommendations
+          v-show="showRecommendations"
+          :active="showRecommendations"
+          @search="searchFormRef?.searchFor($event)"
+        />
         
         <!-- 搜索统计 -->
-        <div v-if="hasSearched || loading" class="search-stats-block mb-6">
+        <div v-if="!showRecommendations && (hasSearched || loading)" class="search-stats-block mb-6">
           <SearchStats 
             :total="searchResults.total || 0" 
             :mergedResults="searchResults.mergedResults || {}" 
@@ -1358,6 +1375,7 @@ onUnmounted(() => {
              用户看到的就是"等待动画重置播放"+界面闪烁。
              改成常驻后，同一个轨道实例从搜索开始连续播到出结果。 -->
         <div
+          v-show="!showRecommendations"
           ref="searchResultsBlockRef"
           class="search-results-block"
           :style="mobileSearchResultsHeight ? {
@@ -1462,6 +1480,17 @@ onUnmounted(() => {
   z-index: 50;
 }
 
+.search-view-actions {
+  max-width: 960px;
+  margin: 0.75rem auto 0;
+  color: hsl(var(--primary));
+  font-size: 0.8125rem;
+}
+
+.search-view-actions button:hover {
+  text-decoration: underline;
+}
+
 /* 导航按钮样式 */
 .nav-button {
   display: flex;
@@ -1558,6 +1587,22 @@ onUnmounted(() => {
 
   .main-content:not(.search-main) {
     overflow-y: auto;
+  }
+
+  .main-content.recommendations-main {
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .search-page.recommendations-page {
+    display: block;
+    height: auto;
+  }
+
+  .recommendations-page .search-form-block {
+    margin-bottom: 1.5rem !important;
   }
 
   .footer-shell {

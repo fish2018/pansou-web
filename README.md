@@ -4,6 +4,24 @@
 
 [![Multi-Arch](https://img.shields.io/badge/arch-amd64%20%7C%20arm64-blue)](https://github.com/fish2018/pansou-web)
 
+## 首页影视推荐与片库
+
+首页提供电影、电视剧、动漫、综艺、纪录片五类作品，以及热门、口碑、新片新剧、随机和影视片库栏目。推荐每批 12 部，片库每页 24 部，支持片名、类型、精确年份及年代筛选；年份选项来自已收录的真实资料。片单后台刷新时保留当前卡片，海报按视口加载并限制并发，避免拖慢列表。
+
+评分只使用豆瓣；TMDB 用于海报、简介和其他元数据，没有豆瓣关联的作品显示“暂无评分”。完整 TMDB 目录同步开启后，片库分别显示已收录数量和资料补齐数量；年份、类型等未补齐字段保持未知。点击作品可查看详情，再用片名或原名发起现有资源搜索，沿用当前来源、网盘与高级筛选设置。
+
+需要配套后端实现同源 `GET /api/discover`、`GET /api/discover/subject` 和 `GET /api/discover/poster`。前两个接口分别返回分页片单与按媒体类型查询的作品详情，海报接口代理允许的豆瓣海报；TMDB 海报直接使用公开图片地址。浏览器只对同源 API 请求附带登录令牌。完整目录接口还应返回 `catalog_sync`（`enabled`、`stage`、`indexed`、`hydrated`），普通片单兼容不含该字段的响应。TMDB 凭据和目录同步开关仅在后端配置，不能放入前端环境变量或构建产物。
+
+本地验证：
+
+```bash
+npm ci
+npm run typecheck
+npm run build
+npx playwright install chromium
+npm run test:e2e -- tests/discover.spec.ts tests/discover-poster.spec.ts
+```
+
 ## 快速开始
 
 ### 一键启动
