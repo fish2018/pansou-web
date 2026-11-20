@@ -12,7 +12,7 @@ const categories: Array<{ value: DiscoverCategory; label: string }> = [
   { value: 'documentary', label: '纪录片' }
 ];
 const collections: Array<{ value: DiscoverCollection; label: string; description: string }> = [
-  { value: 'hot', label: '近期热门', description: '从豆瓣近期热门作品中，发现大家正在关注的好故事。' },
+  { value: 'hot', label: '近期热门', description: '从近期受关注的影视作品中，发现大家正在关注的好故事。' },
   { value: 'top', label: '口碑佳作', description: '按豆瓣评分与评价人数挑选，找一部值得慢慢看的作品。' },
   { value: 'new', label: '新片新剧', description: '按上映、开播时间发现新作品；评分未形成时显示暂无评分。' },
   { value: 'random', label: '随便看看', description: '换一个方向，给下一部好作品留一点偶遇的空间。' },
